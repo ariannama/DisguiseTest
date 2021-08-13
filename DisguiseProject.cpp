@@ -10,18 +10,18 @@
 #define SESSION_PORT 7106
 #define HEARTBEAT_PORT 7104
 
+// Need to link with Ws2_32.lib
 #pragma comment(lib, "Ws2_32.lib")
 
+using namespace std;
 
 int main(int argc, char const* argv[])
 {   
     // Initialize Winsock
-    Sleep(5);
-    printf("Starting...");
+    cout << "Starting...\n";
     WSADATA wsaData;
     int iResult;
 
-    
     iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (iResult != 0) {
         printf("WSAStartup failed: %d\n", iResult);
@@ -44,8 +44,7 @@ int main(int argc, char const* argv[])
     int addrlen_heart = sizeof(heartbeat_addr);
 
     //Read variables
-    int valread_ses;
-    int valread_heart;
+    int valread_ses, valread_heart, activity, max_sd = 2;
     char buffer_ses[1024] = { 0 };
     char buffer_heart[1024] = { 0 };
 
@@ -55,22 +54,38 @@ int main(int argc, char const* argv[])
     //Create socket that will receive session information
     SOCKET heartbeat_sockfd;
     heartbeat_sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
+    fd_set readfds;
+    FD_ZERO(&readfds);
+    FD_SET(session_sockfd, &readfds);
+    FD_SET(heartbeat_sockfd, &readfds);
+
     
     //Binding sockets to different ports
     bind(session_sockfd, (SOCKADDR*)&session_addr, addrlen_ses);
     bind(heartbeat_sockfd, (SOCKADDR*)&heartbeat_addr, addrlen_heart);
 
 
-    wprintf(L"Receiving datagrams...\n");
+    cout << "Receiving UDP datagrams...";
     while (true) {
-        valread_ses = recvfrom(session_sockfd,
-            buffer_ses, sizeof(buffer_ses), 0, (SOCKADDR*)&session_addr, &addrlen_ses);
-        valread_heart = recvfrom(heartbeat_sockfd,
-            buffer_heart, sizeof(buffer_ses), 0, (SOCKADDR*)&heartbeat_addr, &addrlen_heart);
-        buffer_ses[valread_ses] = '\0';
-        buffer_heart[valread_heart] = '\0';
-        printf("Startup : %s\n", buffer_ses);
-        printf("Heartbeat : %s\n", buffer_heart);
+        activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
+
+        if ((activity < 0) && (errno != EINTR))
+        {
+            printf("select error");
+        }
+        if (FD_ISSET(heartbeat_sockfd, &readfds)) {
+        valread_heart = recv(heartbeat_sockfd,
+            buffer_heart, sizeof(buffer_heart), 0);
+        cout << "Heartbeat :" << buffer_heart << "\n";
+        }
+        else if (FD_ISSET(session_sockfd, &readfds)) {
+            valread_ses = recv(session_sockfd,
+                buffer_ses, sizeof(buffer_ses), 0);
+            cout << "Startup: " << buffer_ses << "\n";
+        }
+        
+        
     }
     
     return 0;
