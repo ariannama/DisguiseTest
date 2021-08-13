@@ -44,7 +44,7 @@ int main(int argc, char const* argv[])
     int addrlen_heart = sizeof(heartbeat_addr);
 
     //Read variables
-    int valread_ses, valread_heart, activity, max_sd = 2;
+    int valread_ses, valread_heart, activity, max_sd;
     char buffer_ses[1024] = { 0 };
     char buffer_heart[1024] = { 0 };
 
@@ -55,34 +55,61 @@ int main(int argc, char const* argv[])
     SOCKET heartbeat_sockfd;
     heartbeat_sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
+    //Handle error in creation of socket
+    if (session_sockfd == INVALID_SOCKET) {
+        printf("Unable to connect to server!\n");
+        WSACleanup();
+        return 1;
+    }
+    if (heartbeat_sockfd == INVALID_SOCKET) {
+        printf("Unable to connect to server!\n");
+        WSACleanup();
+        return 1;
+    }
+
     fd_set readfds;
     FD_ZERO(&readfds);
     FD_SET(session_sockfd, &readfds);
     FD_SET(heartbeat_sockfd, &readfds);
+    max_sd = max(session_sockfd, heartbeat_sockfd);
 
     
     //Binding sockets to different ports
     bind(session_sockfd, (SOCKADDR*)&session_addr, addrlen_ses);
     bind(heartbeat_sockfd, (SOCKADDR*)&heartbeat_addr, addrlen_heart);
 
-
+    //Continuously receive UDP datagrams
     cout << "Receiving UDP datagrams...";
     while (true) {
-        activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
+        FD_ZERO(&readfds);
+        FD_SET(session_sockfd, &readfds);
+        FD_SET(heartbeat_sockfd, &readfds);
 
+        activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
+        cout << activity << "\n";
         if ((activity < 0) && (errno != EINTR))
         {
             printf("select error");
         }
         if (FD_ISSET(heartbeat_sockfd, &readfds)) {
-        valread_heart = recv(heartbeat_sockfd,
-            buffer_heart, sizeof(buffer_heart), 0);
-        cout << "Heartbeat :" << buffer_heart << "\n";
+            valread_heart = recv(heartbeat_sockfd,
+                buffer_heart, sizeof(buffer_heart), 0);
+            if (valread_heart > 0) {
+                cout << "Heartbeat :" << buffer_heart << "\n";
+            }
+            else {
+                cout << "recv failed with error: \n" << WSAGetLastError();
+            }
         }
         else if (FD_ISSET(session_sockfd, &readfds)) {
             valread_ses = recv(session_sockfd,
                 buffer_ses, sizeof(buffer_ses), 0);
-            cout << "Startup: " << buffer_ses << "\n";
+            if (valread_ses > 0) {
+                cout << "Startup: " << buffer_ses << "\n";
+            }
+            else {
+                cout << "recv failed with error: \n" << WSAGetLastError();
+            }
         }
         
         
