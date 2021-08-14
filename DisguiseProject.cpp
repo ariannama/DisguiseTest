@@ -102,9 +102,11 @@ int main(int argc, char const* argv[])
             if (valread_heart > 0) {
                 string s1 = buffer_heart;
                 size_t n1 = s1.find("HELLO");
+                size_t n2 = s1.find("MACHINESTATUS");
                 if (n1 != string::npos) {
-                    std::cout << "first 'needle' found at: " << n1 << '\n';
+                    cout << "Heartbeat message: new state \"STARTING\" in machine: " << 
                 }
+
                 cout << "Heartbeat :" << buffer_heart << "\n";
                 
             }
@@ -116,6 +118,9 @@ int main(int argc, char const* argv[])
         else if (FD_ISSET(session_sockfd, &readfds)) {
             valread_ses = recv(session_sockfd,
                 buffer_ses, sizeof(buffer_ses), 0);
+            string s2 = buffer_ses;
+            size_t n1 = s2.find("SESSION2");
+            size_t n2 = s2.find("MACHINE");
             if (valread_ses > 0) {
                 cout << "Startup: " << buffer_ses << "\n";
             }
