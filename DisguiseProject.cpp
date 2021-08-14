@@ -8,6 +8,7 @@
 #include <tchar.h>
 #include <vector>
 #include <Windows.h>
+
 #define SESSION_PORT 7106
 #define HEARTBEAT_PORT 7104
 
@@ -103,10 +104,11 @@ int main(int argc, char const* argv[])
         //If the activity is in the heartbeat socket, read datagram
         if (FD_ISSET(heartbeat_sockfd, &readfds)) {
             valread_heart = recv(heartbeat_sockfd,
-                buffer_heart, sizeof(buffer_heart), 0);
+                buffer_heart, sizeof(buffer_heart), 0);            
             //Parsing datagram
             if (valread_heart > 0) {
                 string s1 = buffer_heart;
+                s1 += "|";
                 size_t n1 = s1.find("MACHINESTATUS");
                 size_t pos = 0;
                 if (n1 != string::npos) {                    
@@ -115,8 +117,9 @@ int main(int argc, char const* argv[])
                         words.push_back(s1.substr(0, pos));
                         s1.erase(0, pos + delim.length());
                     }
-                    cout << "\tMachine version: " << words[1] << "\n";
-                    cout << "\tFPS: " << words[2] << "\n";
+                    cout << "\tMachine: " << words[1] << "\n";
+                    cout << "\tMachine version: " << words[2] << "\n";
+                    cout << "\tFPS: " << words[3] << "\n";                    
                     words.clear();                
                 }
             }
@@ -127,10 +130,11 @@ int main(int argc, char const* argv[])
         //If the activity is in the session socket, read datagram
         else if (FD_ISSET(session_sockfd, &readfds)) {
             valread_ses = recv(session_sockfd,
-                buffer_ses, sizeof(buffer_ses), 0);
+                buffer_ses, sizeof(buffer_ses), 0);           
             //Parsing datagram
             if (valread_ses > 0) {                
                 string s2 = buffer_ses;
+                s2 += "|";
                 size_t n1 = s2.find("SESSION2");
                 size_t n2 = s2.find("MACHINE");
                 size_t pos = 0;
@@ -142,16 +146,18 @@ int main(int argc, char const* argv[])
                     }
                     cout << "\tSession name: " << words[1] << "\n";
                     cout << "\tCreator: " << words[2] << "\n";
+                    
                     words.clear();
                 }
                 if (n2 != string::npos) {
-                    cout << "Actor starting up";
+                    cout << "Actor starting up\n";
                     while ((pos = s2.find(delim)) != string::npos) {
                         words.push_back(s2.substr(0, pos));
                         s2.erase(0, pos + delim.length());
                     }
                     cout << "\tMachine ID: " << words[1] << "\n";
-                    cout << "\tSession name: " << words[2] << "\n";
+                    cout << "\tSession name: " << words[2] << "\n";                    
+                    words.clear();
                     
                 }
             }
