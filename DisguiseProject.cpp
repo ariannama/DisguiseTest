@@ -1,6 +1,8 @@
 //Author: Arianna Marrocu
 //Disguise Code Test
 //Monitor startup and heartbeat messages from Director and Actor machines in d3 session
+//Ignored HELLO messages
+//One error: receiving too many session names when starting up an actor - unsure as to why, might be due to HELLO messages interfering with functionality
 
 #include <iostream>
 #include <winsock2.h>
@@ -104,7 +106,8 @@ int main(int argc, char const* argv[])
         //If the activity is in the heartbeat socket, read datagram
         if (FD_ISSET(heartbeat_sockfd, &readfds)) {
             valread_heart = recv(heartbeat_sockfd,
-                buffer_heart, sizeof(buffer_heart), 0);            
+                buffer_heart, sizeof(buffer_heart), 0);   
+            words.clear();
             //Parsing datagram
             if (valread_heart > 0) {
                 string s1 = buffer_heart;
@@ -130,7 +133,8 @@ int main(int argc, char const* argv[])
         //If the activity is in the session socket, read datagram
         else if (FD_ISSET(session_sockfd, &readfds)) {
             valread_ses = recv(session_sockfd,
-                buffer_ses, sizeof(buffer_ses), 0);           
+                buffer_ses, sizeof(buffer_ses), 0); 
+            words.clear();
             //Parsing datagram
             if (valread_ses > 0) {                
                 string s2 = buffer_ses;
@@ -152,14 +156,18 @@ int main(int argc, char const* argv[])
                     }
                     words.clear();
                 }
-                if (n2 != string::npos) {
+                else if (n2 != string::npos) {
+                    words.clear();
                     cout << "Actor starting up\n";
                     while ((pos = s2.find(delim)) != string::npos) {
                         words.push_back(s2.substr(0, pos));
                         s2.erase(0, pos + delim.length());
                     }
                     cout << "\tMachine ID: " << words[1] << "\n";
-                    cout << "\tSession name: " << words[2] << "\n";                    
+                    cout << "\tSession name: " << words[2] << "\n";
+                    for (const auto& value : words) {
+                        std::cout << value << "\n";
+                    }
                     words.clear();
                     
                 }
