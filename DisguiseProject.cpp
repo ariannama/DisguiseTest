@@ -165,9 +165,7 @@ int main(int argc, char const* argv[])
                     }
                     cout << "\tMachine ID: " << words[1] << "\n";
                     cout << "\tSession name: " << words[2] << "\n";
-                    for (const auto& value : words) {
-                        std::cout << value << "\n";
-                    }
+                   
                     words.clear();
                     
                 }
