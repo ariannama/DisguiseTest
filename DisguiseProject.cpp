@@ -101,10 +101,9 @@ int main(int argc, char const* argv[])
                 buffer_heart, sizeof(buffer_heart), 0);
             if (valread_heart > 0) {
                 string s1 = buffer_heart;
-                size_t n1 = s1.find("HELLO");
-                size_t n2 = s1.find("MACHINESTATUS");
+                size_t n1 = s1.find("MACHINESTATUS");
                 if (n1 != string::npos) {
-                    cout << "Heartbeat message: new state \"STARTING\" in machine: " << 
+                    cout << "Heartbeat message: active status in machine: ";
                 }
 
                 cout << "Heartbeat :" << buffer_heart << "\n";
