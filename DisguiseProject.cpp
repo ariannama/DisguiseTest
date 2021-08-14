@@ -43,7 +43,7 @@ int main(int argc, char const* argv[])
     heartbeat_addr.sin_addr.s_addr = INADDR_ANY;
     int addrlen_heart = sizeof(heartbeat_addr);
 
-    //Read variables
+    //Variables to store datagrams
     int valread_ses, valread_heart, activity, max_sd;
     char buffer_ses[1024] = { 0 };
     char buffer_heart[1024] = { 0 };
@@ -51,7 +51,7 @@ int main(int argc, char const* argv[])
     //Create socket that will receive session information
     SOCKET session_sockfd;
     session_sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); 
-    //Create socket that will receive session information
+    //Create socket that will receive heartbeat information
     SOCKET heartbeat_sockfd;
     heartbeat_sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
@@ -67,6 +67,7 @@ int main(int argc, char const* argv[])
         return 1;
     }
 
+    //Create set of file descriptors containing both sockets
     fd_set readfds;
     FD_ZERO(&readfds);
     FD_SET(session_sockfd, &readfds);
@@ -81,26 +82,37 @@ int main(int argc, char const* argv[])
     //Continuously receive UDP datagrams
     cout << "Receiving UDP datagrams...";
     while (true) {
+        //Empty out fd_set every time to receive messages coming to both ports
         FD_ZERO(&readfds);
+        
         FD_SET(session_sockfd, &readfds);
         FD_SET(heartbeat_sockfd, &readfds);
 
+        //Identify if theres is are datagrams being sent to the sockets in fd_set
         activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
-        cout << activity << "\n";
         if ((activity < 0) && (errno != EINTR))
         {
             printf("select error");
         }
+
+        //If the activity is in the heartbeat socket, read datagram
         if (FD_ISSET(heartbeat_sockfd, &readfds)) {
             valread_heart = recv(heartbeat_sockfd,
                 buffer_heart, sizeof(buffer_heart), 0);
             if (valread_heart > 0) {
+                string s1 = buffer_heart;
+                size_t n1 = s1.find("HELLO");
+                if (n1 != string::npos) {
+                    std::cout << "first 'needle' found at: " << n1 << '\n';
+                }
                 cout << "Heartbeat :" << buffer_heart << "\n";
+                
             }
             else {
                 cout << "recv failed with error: \n" << WSAGetLastError();
             }
         }
+        //If the activity is in the session socket, read datagram
         else if (FD_ISSET(session_sockfd, &readfds)) {
             valread_ses = recv(session_sockfd,
                 buffer_ses, sizeof(buffer_ses), 0);
