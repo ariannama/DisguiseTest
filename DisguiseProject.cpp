@@ -146,7 +146,10 @@ int main(int argc, char const* argv[])
                     }
                     cout << "\tSession name: " << words[1] << "\n";
                     cout << "\tCreator: " << words[2] << "\n";
-                    
+                    cout << "\tActors: " << "\n";
+                    for (auto it = begin(words) + 3; it != end(words); ++it) {
+                        cout <<"\t\t" << *it << "\n";
+                    }
                     words.clear();
                 }
                 if (n2 != string::npos) {
